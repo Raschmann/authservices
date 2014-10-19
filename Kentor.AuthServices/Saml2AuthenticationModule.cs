@@ -54,6 +54,12 @@ namespace Kentor.AuthServices
                 commandResult.Apply(new HttpResponseWrapper(application.Response));
             }
         }
+
+        public CommandResult SignIn()
+        {
+            var request = new HttpRequestWrapper(HttpContext.Current.Request);
+            return CommandFactory.GetCommand("SignIn").Run(new HttpRequestData(request));
+        }
  
         private static CommandResult RunCommand(HttpApplication application, ICommand command)
         {
