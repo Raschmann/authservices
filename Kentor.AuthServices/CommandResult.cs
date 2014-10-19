@@ -102,6 +102,8 @@ namespace Kentor.AuthServices
 
                 FederatedAuthentication.SessionAuthenticationModule
                     .AuthenticateSessionSecurityToken(sessionToken, true);
+
+                FederatedAuthentication.GetHttpModule<Saml2AuthenticationModule>().OnSignedIn(EventArgs.Empty);
             }
         }
     }
