@@ -21,17 +21,13 @@ namespace SampleApplication
             BundleConfig.RegisterBundles(BundleTable.Bundles);
 
             //SUBSCRIBE TO MODULE EVENTS
-            var module = FederatedAuthentication.GetHttpModule<Saml2AuthenticationModule>();
-            module.AuthorizationFailed += Saml2AuthenticationModule_AuthorizationFailed;
-            module.RedirectingToIdentityProvider += Saml2AuthenticationModule_RedirectingToIdentityProvider;
-            module.SecurityTokenReceived += Saml2AuthenticationModule_SecurityTokenReceived;
-            module.SecurityTokenValidated += Saml2AuthenticationModule_SecurityTokenValidated;
-            module.SessionSecurityTokenCreated += Saml2AuthenticationModule_SessionSecurityTokenCreated;
-            module.SigningOut += ModuleOnSigningOut;
-            module.SignedOut += ModuleOnSignedOut;
-            module.SignedIn += Saml2AuthenticationModule_SignedIn;
-
-            WSFederationAuthenticationModule ws;
+            Saml2AuthenticationModule.Current.RedirectingToIdentityProvider += Saml2AuthenticationModule_RedirectingToIdentityProvider;
+            Saml2AuthenticationModule.Current.SecurityTokenReceived += Saml2AuthenticationModule_SecurityTokenReceived;
+            Saml2AuthenticationModule.Current.SecurityTokenValidated += Saml2AuthenticationModule_SecurityTokenValidated;
+            Saml2AuthenticationModule.Current.SessionSecurityTokenCreated += Saml2AuthenticationModule_SessionSecurityTokenCreated;
+            Saml2AuthenticationModule.Current.SignedIn += Saml2AuthenticationModule_SignedIn;
+            Saml2AuthenticationModule.Current.SigningOut += ModuleOnSigningOut;
+            Saml2AuthenticationModule.Current.SignedOut += ModuleOnSignedOut;
         }
 
         void ModuleOnSignedOut(object sender, EventArgs eventArgs)
@@ -76,19 +72,14 @@ namespace SampleApplication
             System.Diagnostics.Trace.WriteLine("Valid to: " + e.SecurityToken.ValidTo);
         }
 
-        void Saml2AuthenticationModule_AuthorizationFailed(object sender, AuthorizationFailedEventArgs e)
-        {
-            //Use this event to report more details regarding the ahorization failure
-            System.Diagnostics.Trace.WriteLine("Handling AuthorizationFailed event");
-
-        }
-
         void Saml2AuthenticationModule_RedirectingToIdentityProvider(object sender, Kentor.AuthServices.RedirectingToIdentityProviderEventArgs e)
         {
             //Use this event to programmatically modify the sign-in message to the STS.
             System.Diagnostics.Trace.WriteLine("Handling RedirectingToIdentityProvider event");
             System.Diagnostics.Trace.WriteLine("Location: " + e.CommandResult.Location);
-            System.Diagnostics.Trace.WriteLine("Content:" + e.CommandResult.Content);
+            System.Diagnostics.Trace.WriteLine("Http status code: " + e.CommandResult.HttpStatusCode);
+
+            e.CommandResult.HttpParameters.Add("lng", "sk");
         }
     }
 }

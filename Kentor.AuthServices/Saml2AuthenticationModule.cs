@@ -59,12 +59,7 @@ namespace Kentor.AuthServices
         /// <summary>
         /// Occurs when the module is going to redirect the user to the identity provider.
         /// </summary>
-        public event EventHandler<RedirectingToIdentityProviderEventArgs> RedirectingToIdentityProvider;
-
-        /// <summary>
-        /// Occurs when the module is determining whether it should redirect the user to the configured issuer to authenticate.
-        /// </summary>
-        public event EventHandler<AuthorizationFailedEventArgs> AuthorizationFailed;
+        public event EventHandler<RedirectingToIdentityProviderEventArgs> RedirectingToIdentityProvider;        
 
         /// <summary>
         /// Gets the current authentication module
@@ -99,18 +94,18 @@ namespace Kentor.AuthServices
         {
             var application = (HttpApplication)sender;
 
-            if(application.Request.AppRelativeCurrentExecutionFilePath
-                .StartsWith(ModulePath, StringComparison.OrdinalIgnoreCase))
-            {
-                var moduleRelativePath = application.Request.AppRelativeCurrentExecutionFilePath
-                    .Substring(ModulePath.Length);
+            if (application.Request.AppRelativeCurrentExecutionFilePath == null || 
+                !application.Request.AppRelativeCurrentExecutionFilePath.StartsWith(ModulePath, StringComparison.OrdinalIgnoreCase)) 
+                return;
 
-                var command = CommandFactory.GetCommand(moduleRelativePath);
-                var commandResult = RunCommand(application, command);
+            var moduleRelativePath = application.Request.AppRelativeCurrentExecutionFilePath
+                .Substring(ModulePath.Length);
 
-                commandResult.SignInSessionAuthenticationModule();
-                commandResult.Apply(new HttpResponseWrapper(application.Response));
-            }
+            var command = CommandFactory.GetCommand(moduleRelativePath);
+            var commandResult = RunCommand(application, command);
+
+            commandResult.SignInSessionAuthenticationModule();
+            commandResult.Apply(new HttpResponseWrapper(application.Response));
         }
 
         /// <summary>
@@ -212,12 +207,12 @@ namespace Kentor.AuthServices
         /// Raises the RedirectingToIdentityProvider event.
         /// </summary>
         /// <param name="args">The data for the event.</param>
-        internal virtual void OnRedirectingToIdentityProvider(RedirectingToIdentityProviderEventArgs args)
+        internal static void OnRedirectingToIdentityProvider(RedirectingToIdentityProviderEventArgs args)
         {
-            if (RedirectingToIdentityProvider == null)
+            if (Current == null || Current.RedirectingToIdentityProvider == null)
                 return;
 
-            RedirectingToIdentityProvider(this, args);
+            Current.RedirectingToIdentityProvider(Current, args);
         }
 
         /// <summary>
@@ -252,7 +247,7 @@ namespace Kentor.AuthServices
 
         // <summary>
         /// Signs out of the current session and requests a redirect back to the specified URL.
-        /// </summary>
+        /// 
         /// <param name="redirectUrl">The URL to which the browser should be redirected after sign-out.</param>
         /// <param name="initiateSignOutCleanup">Always set false. Setting this parameter to true is not supported.</param>
         /// <exception cref="T:System.ArgumentException"><paramref name="redirectUrl"/> is null.</exception>
@@ -272,12 +267,12 @@ namespace Kentor.AuthServices
         /// <summary>
         /// Signs out of the current session and raises the appropriate events.
         /// </summary>
-        /// <param name="isIPRequest">true if the request was initiated by the IP-STS via a single sign-out cleanup request message (LogoutRequets); otherwise, false.</param>
-        public virtual void SignOut(bool isIPRequest)
+        /// <param name="idpRequest">true if the request was initiated by the IP-STS via a single sign-out cleanup request message (LogoutRequets); otherwise, false.</param>        
+        public virtual void SignOut(bool idpRequest)
         {
             try
             {
-                OnSigningOut(new SigningOutEventArgs(isIPRequest));
+                OnSigningOut(new SigningOutEventArgs(idpRequest));
                 FederatedAuthentication.SessionAuthenticationModule.SignOut();
                 OnSignedOut(EventArgs.Empty);
             }
@@ -313,7 +308,7 @@ namespace Kentor.AuthServices
             }
             catch (AuthServicesException)
             {
-                return new CommandResult()
+                return new CommandResult
                 {
                     HttpStatusCode = HttpStatusCode.InternalServerError
                 };

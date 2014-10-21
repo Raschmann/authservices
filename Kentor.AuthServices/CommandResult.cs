@@ -1,7 +1,8 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
+using System.Collections.Specialized;
 using System.IdentityModel.Services;
 using System.IdentityModel.Tokens;
+using System.Linq;
 using System.Net;
 using System.Security.Claims;
 using System.Web;
@@ -17,6 +18,11 @@ namespace Kentor.AuthServices
         /// Status code that should be returned.
         /// </summary>
         public HttpStatusCode HttpStatusCode { get; set; }
+
+        /// <summary>
+        /// Http parameters the should be included.
+        /// </summary>
+        public NameValueCollection HttpParameters { get; private set; }
         
         /// <summary>
         /// Cacheability of the command result.
@@ -46,8 +52,9 @@ namespace Kentor.AuthServices
         /// <summary>
         /// Ctor
         /// </summary>
-        public CommandResult()
+        internal CommandResult()
         {
+            HttpParameters = new NameValueCollection();
             HttpStatusCode = HttpStatusCode.OK;
             Cacheability = HttpCacheability.NoCache;
         }
@@ -77,17 +84,16 @@ namespace Kentor.AuthServices
                     throw new InvalidOperationException("Invalid HttpStatusCode for redirect, but Location is specified");
                 }
 
-                var e = new RedirectingToIdentityProviderEventArgs(this);
+                var e = new RedirectingToIdentityProviderEventArgs(this);                
 
-                var module = FederatedAuthentication.GetHttpModule<Saml2AuthenticationModule>();
-
-                if (module != null)
-                    module.OnRedirectingToIdentityProvider(e);
+                Saml2AuthenticationModule.OnRedirectingToIdentityProvider(e);
 
                 if (e.Cancel)
                     return;
 
-                response.Redirect(Location.OriginalString);
+                response.Redirect(e.CommandResult.Location.OriginalString + 
+                    (e.CommandResult.Location.OriginalString.Contains("?") ? "&" : "?") + 
+                    e.CommandResult.HttpParameters.GetQueryString());
             }
             else
             {
@@ -102,7 +108,7 @@ namespace Kentor.AuthServices
         /// <summary>
         /// Establishes an application session by calling the session authentication module.
         /// </summary>
-        [ExcludeFromCodeCoverage]
+        [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
         public void SignInSessionAuthenticationModule()
         {
             // Ignore this if we're not running inside IIS, e.g. in unit tests.
@@ -123,6 +129,17 @@ namespace Kentor.AuthServices
                 FederatedAuthentication.SessionAuthenticationModule
                     .AuthenticateSessionSecurityToken(args.SessionToken, args.WriteSessionCookie);                
             }
+        }
+    }
+
+    internal static class CollectionExtensions
+    {
+        public static string GetQueryString(this NameValueCollection parameters)
+        {
+            return String.Join("&", (
+                from string name in parameters 
+                select String.Concat(name, "=", HttpUtility.UrlEncode(parameters[name]))
+                ).ToArray());
         }
     }
 }
