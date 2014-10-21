@@ -81,6 +81,7 @@
     <Compile Include="NotFoundCommand.cs" />
     <Compile Include="ICommand.cs" />
     <Compile Include="CommandFactory.cs" />
+    <Compile Include="SecurityTokenValidatedEnentArgs.cs" />
     <Compile Include="StoredRequestState.cs" />
     <Compile Include="PendingAuthnRequests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

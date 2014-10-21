@@ -30,6 +30,8 @@ namespace SampleApplication
             module.SigningOut += ModuleOnSigningOut;
             module.SignedOut += ModuleOnSignedOut;
             module.SignedIn += Saml2AuthenticationModule_SignedIn;
+
+            WSFederationAuthenticationModule ws;
         }
 
         void ModuleOnSignedOut(object sender, EventArgs eventArgs)
@@ -59,7 +61,7 @@ namespace SampleApplication
             System.Diagnostics.Trace.WriteLine("Key expires on: " + e.SessionToken.KeyExpirationTime);
         }
 
-        void Saml2AuthenticationModule_SecurityTokenValidated(object sender, SecurityTokenValidatedEventArgs e)
+        void Saml2AuthenticationModule_SecurityTokenValidated(object sender, Kentor.AuthServices.SecurityTokenValidatedEventArgs e)
         {
             //All vlidation SecurityTokenHandler checks are successful
             System.Diagnostics.Trace.WriteLine("Handling SecurityTokenValidated event");
@@ -69,6 +71,9 @@ namespace SampleApplication
         {
             //Augment token validation with your cusotm validation checks without invalidating the token.
             System.Diagnostics.Trace.WriteLine("Handling SecurityTokenReceived event");
+            System.Diagnostics.Trace.WriteLine("Token id: " + e.SecurityToken.Id);
+            System.Diagnostics.Trace.WriteLine("Valid from: " + e.SecurityToken.ValidFrom);
+            System.Diagnostics.Trace.WriteLine("Valid to: " + e.SecurityToken.ValidTo);
         }
 
         void Saml2AuthenticationModule_AuthorizationFailed(object sender, AuthorizationFailedEventArgs e)

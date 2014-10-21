@@ -1,16 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IdentityModel.Metadata;
+using System.IdentityModel.Services;
 using System.IdentityModel.Tokens;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
 using System.Xml;
-using Kentor.AuthServices.Configuration;
-using System.IdentityModel.Metadata;
-using System.Security.Cryptography;
-using System.IdentityModel.Services;
 
 namespace Kentor.AuthServices
 {
@@ -325,14 +324,7 @@ namespace Kentor.AuthServices
             else
             {
                 // If the response message is not signed, all assersions have to be signed correctly
-                foreach (var assertionNode in AllAssertionElementNodes)
-                {
-                    if (!CheckSignature(assertionNode, idpKey))
-                    {
-                        return false;
-                    }
-                }
-                return true;
+                return AllAssertionElementNodes.All(assertionNode => CheckSignature(assertionNode, idpKey));
             }
         }
 
@@ -439,14 +431,28 @@ namespace Kentor.AuthServices
                 {
                     Saml2PSecurityTokenHandler handler = Saml2PSecurityTokenHandler.DefaultInstance;
 
-                    var token = (Saml2SecurityToken)handler.ReadToken(reader);
+                    var args = new SecurityTokenReceivedEventArgs(handler.ReadToken(reader));
+
+                    Saml2AuthenticationModule.OnSecurityTokenReceived(args);
+
+                    if (args.Cancel)
+                        yield return null;
+
+                    var token = args.SecurityToken as Saml2SecurityToken;
+
                     handler.DetectReplayedToken(token);
 
                     var validateAudience = token.Assertion.Conditions.AudienceRestrictions.Count > 0;
 
                     handler.ValidateConditions(token.Assertion.Conditions, validateAudience);
 
-                    yield return handler.CreateClaims(token);
+                    var tokenValidatedArgs = new SecurityTokenValidatedEventArgs(handler.CreateClaims(token));
+                    Saml2AuthenticationModule.OnSecurityTokenValidated(tokenValidatedArgs);
+
+                    if (tokenValidatedArgs.Cancel)
+                        yield return null;
+
+                    yield return tokenValidatedArgs.ClaimsIdentity;
                 }
             }
         }

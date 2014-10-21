@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IdentityModel.Services;
-using System.IdentityModel.Tokens;
-using System.Linq;
 using System.Net;
+using System.Runtime;
 using System.Web;
 
 namespace Kentor.AuthServices
@@ -67,8 +66,12 @@ namespace Kentor.AuthServices
         /// </summary>
         public event EventHandler<AuthorizationFailedEventArgs> AuthorizationFailed;
 
+        /// <summary>
+        /// Gets the current authentication module
+        /// </summary>
         public static Saml2AuthenticationModule Current
         {
+            [TargetedPatchingOptOut("Performance critical to inline this type of method across NGen image boundaries")]
             get { return FederatedAuthentication.GetHttpModule<Saml2AuthenticationModule>(); }
         }
 
@@ -170,6 +173,30 @@ namespace Kentor.AuthServices
         }
 
         /// <summary>
+        /// Raises the SecurityTokenReceived event.
+        /// </summary>
+        /// <param name="args">The data for the event.</param>
+        internal static void OnSecurityTokenReceived(SecurityTokenReceivedEventArgs args)
+        {
+            if (Current == null || Current.SecurityTokenReceived == null)
+                return;
+
+            Current.SecurityTokenReceived(Current, args);
+        }
+
+        /// <summary>
+        /// Raises the SecurityTokenReceived event.
+        /// </summary>
+        /// <param name="args">The data for the event.</param>
+        internal static void OnSecurityTokenValidated(SecurityTokenValidatedEventArgs args)
+        {
+            if (Current == null || Current.SecurityTokenValidated == null)
+                return;
+
+            Current.SecurityTokenValidated(Current, args);
+        }
+
+        /// <summary>
         /// Raises the SessionSecurityTokenCreated event.
         /// </summary>
         /// <param name="args">The data for the event.</param>
@@ -245,7 +272,7 @@ namespace Kentor.AuthServices
         /// <summary>
         /// Signs out of the current session and raises the appropriate events.
         /// </summary>
-        /// <param name="isIPRequest">true if the request was initiated by the IP-STS via a WS-Federation sign-out cleanup request message (“wsignoutcleanup1.0”); otherwise, false.</param>
+        /// <param name="isIPRequest">true if the request was initiated by the IP-STS via a single sign-out cleanup request message (LogoutRequets); otherwise, false.</param>
         public virtual void SignOut(bool isIPRequest)
         {
             try
