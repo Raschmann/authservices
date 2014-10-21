@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IdentityModel.Services;
-using System.Linq;
-using System.Web;
+﻿using System.Diagnostics;
+using Kentor.AuthServices;
+using System;
 using System.Web.Mvc;
 
 namespace SampleApplication.Controllers
@@ -15,9 +13,19 @@ namespace SampleApplication.Controllers
         }
 
         public ActionResult SignOut()
+        {            
+            Debug.Assert(Request.Url != null, "Request.Url != null");
+            // ReSharper disable once AssignNullToNotNullAttribute
+            Saml2AuthenticationModule.Current.SignOut(new Uri(Url.Action("Index", null, null, Request.Url.Scheme)));
+
+            return new EmptyResult();
+        }
+
+        public ActionResult SignIn()
         {
-            FederatedAuthentication.SessionAuthenticationModule.SignOut();
-            return RedirectToAction("Index");
+            Saml2AuthenticationModule.Current.SignIn();
+
+            return new EmptyResult();
         }
     }
 }

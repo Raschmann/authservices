@@ -13,7 +13,7 @@
         You are currently not signed in.
     </p>
     <p>
-        <a href="@Url.Content("~/Saml2AuthenticationModule/SignIn")">Sign in</a> - default IDP
+        <a href="@Url.Action("SignIn")">Sign in</a> - default IDP
         @foreach (var idp in Kentor.AuthServices.Configuration.KentorAuthServicesSection.Current.IdentityProviders)
         {
             var entityId = idp.EntityId;

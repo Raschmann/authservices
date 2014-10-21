@@ -77,6 +77,16 @@ namespace Kentor.AuthServices
                     throw new InvalidOperationException("Invalid HttpStatusCode for redirect, but Location is specified");
                 }
 
+                var e = new RedirectingToIdentityProviderEventArgs(this);
+
+                var module = FederatedAuthentication.GetHttpModule<Saml2AuthenticationModule>();
+
+                if (module != null)
+                    module.OnRedirectingToIdentityProvider(e);
+
+                if (e.Cancel)
+                    return;
+
                 response.Redirect(Location.OriginalString);
             }
             else
@@ -100,10 +110,18 @@ namespace Kentor.AuthServices
             {
                 var sessionToken = new SessionSecurityToken(Principal);
 
-                FederatedAuthentication.SessionAuthenticationModule
-                    .AuthenticateSessionSecurityToken(sessionToken, true);
+               var args = new SessionSecurityTokenCreatedEventArgs(sessionToken)
+               {
+                   WriteSessionCookie = true
+               };
 
-                FederatedAuthentication.GetHttpModule<Saml2AuthenticationModule>().OnSignedIn(EventArgs.Empty);
+                var module = Saml2AuthenticationModule.Current;
+
+                if (module != null)
+                    module.OnSessionSecurityTokenCreated(args);
+
+                FederatedAuthentication.SessionAuthenticationModule
+                    .AuthenticateSessionSecurityToken(args.SessionToken, args.WriteSessionCookie);                
             }
         }
     }

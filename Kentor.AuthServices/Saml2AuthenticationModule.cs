@@ -67,6 +67,11 @@ namespace Kentor.AuthServices
         /// </summary>
         public event EventHandler<AuthorizationFailedEventArgs> AuthorizationFailed;
 
+        public static Saml2AuthenticationModule Current
+        {
+            get { return FederatedAuthentication.GetHttpModule<Saml2AuthenticationModule>(); }
+        }
+
         /// <summary>
         /// Init the module and subscribe to events.
         /// </summary>
@@ -164,10 +169,113 @@ namespace Kentor.AuthServices
             SignOutError(this, args);
         }
 
-        public static CommandResult SignIn()
+        /// <summary>
+        /// Raises the SessionSecurityTokenCreated event.
+        /// </summary>
+        /// <param name="args">The data for the event.</param>
+        internal virtual void OnSessionSecurityTokenCreated(SessionSecurityTokenCreatedEventArgs args)
+        {
+            if (SessionSecurityTokenCreated == null)
+                return;
+
+            SessionSecurityTokenCreated(this, args);
+        }
+
+        /// <summary>
+        /// Raises the RedirectingToIdentityProvider event.
+        /// </summary>
+        /// <param name="args">The data for the event.</param>
+        internal virtual void OnRedirectingToIdentityProvider(RedirectingToIdentityProviderEventArgs args)
+        {
+            if (RedirectingToIdentityProvider == null)
+                return;
+
+            RedirectingToIdentityProvider(this, args);
+        }
+
+        /// <summary>
+        /// Requests a redirect to Idp
+        /// </summary>
+        public void SignIn()
         {
             var request = new HttpRequestWrapper(HttpContext.Current.Request);
-            return CommandFactory.GetCommand("SignIn").Run(new HttpRequestData(request));
+            var response = new HttpResponseWrapper(HttpContext.Current.Response);
+
+            CommandFactory.GetCommand("SignIn").Run(new HttpRequestData(request)).Apply(response);
+            OnSignedIn(EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// Signs out of the current session and requests a redirect back to the URL specified in the current HTTP request.
+        /// </summary>
+        public virtual void SignOut()
+        {
+            SignOut(HttpContext.Current.Request.Url);
+        }
+
+        /// <summary>
+        /// Signs out of the current session and requests a redirect back to the specified URL.
+        /// </summary>
+        /// <param name="redirectUrl">The URL to which the browser should be redirected after the session is deleted.</param>
+        /// <exception cref="T:System.ArgumentException"><paramref name="redirectUrl"/> is null.</exception>        
+        public virtual void SignOut(Uri redirectUrl)
+        {
+            SignOut(redirectUrl, false);
+        }
+
+        // <summary>
+        /// Signs out of the current session and requests a redirect back to the specified URL.
+        /// </summary>
+        /// <param name="redirectUrl">The URL to which the browser should be redirected after sign-out.</param>
+        /// <param name="initiateSignOutCleanup">Always set false. Setting this parameter to true is not supported.</param>
+        /// <exception cref="T:System.ArgumentException"><paramref name="redirectUrl"/> is null.</exception>
+        /// <exception cref="T:System.NotImplementedException">The Saml2AuthenticationModule class throws this exception if <paramref name="initiateSignOutCleanup"/> is true. Do not set this parameter to true.</exception>
+        public virtual void SignOut(Uri redirectUrl, bool initiateSignOutCleanup)
+        {
+            if (initiateSignOutCleanup)
+                throw new NotImplementedException("Initiate sign out cleanup is not implemented");
+
+            if (redirectUrl == null)
+                throw new ArgumentException("The value is null.", "redirectUrl");
+
+            SignOut(false);
+            Redirect(redirectUrl.AbsoluteUri);
+        }
+
+        /// <summary>
+        /// Signs out of the current session and raises the appropriate events.
+        /// </summary>
+        /// <param name="isIPRequest">true if the request was initiated by the IP-STS via a WS-Federation sign-out cleanup request message (“wsignoutcleanup1.0”); otherwise, false.</param>
+        public virtual void SignOut(bool isIPRequest)
+        {
+            try
+            {
+                OnSigningOut(new SigningOutEventArgs(isIPRequest));
+                FederatedAuthentication.SessionAuthenticationModule.SignOut();
+                OnSignedOut(EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {                
+                var args = new ErrorEventArgs(ex);
+                OnSignOutError(args);
+
+                if (args.Cancel)
+                    return;
+
+                throw;
+            }
+        }
+
+        internal static void Redirect(string redirectUrl)
+        {
+            var current = HttpContext.Current;
+
+            current.Response.Redirect(redirectUrl, false);
+
+            if (current.ApplicationInstance == null)
+                return;
+
+            current.ApplicationInstance.CompleteRequest();
         }
  
         private static CommandResult RunCommand(HttpApplication application, ICommand command)
