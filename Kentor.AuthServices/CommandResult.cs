@@ -22,7 +22,7 @@ namespace Kentor.AuthServices
         /// <summary>
         /// Http parameters the should be included.
         /// </summary>
-        public NameValueCollection HttpParameters { get; private set; }
+        public NameValueCollection HttpParameters { get; internal set; }
         
         /// <summary>
         /// Cacheability of the command result.
@@ -54,7 +54,6 @@ namespace Kentor.AuthServices
         /// </summary>
         internal CommandResult()
         {
-            HttpParameters = new NameValueCollection();
             HttpStatusCode = HttpStatusCode.OK;
             Cacheability = HttpCacheability.NoCache;
         }
@@ -82,18 +81,9 @@ namespace Kentor.AuthServices
                 if (HttpStatusCode != HttpStatusCode.SeeOther)
                 {
                     throw new InvalidOperationException("Invalid HttpStatusCode for redirect, but Location is specified");
-                }
+                }               
 
-                var e = new RedirectingToIdentityProviderEventArgs(this);                
-
-                Saml2AuthenticationModule.OnRedirectingToIdentityProvider(e);
-
-                if (e.Cancel)
-                    return;
-
-                response.Redirect(e.CommandResult.Location.OriginalString + 
-                    (e.CommandResult.Location.OriginalString.Contains("?") ? "&" : "?") + 
-                    e.CommandResult.HttpParameters.GetQueryString());
+                response.Redirect(Location.OriginalString + GetParameters());
             }
             else
             {
@@ -103,6 +93,16 @@ namespace Kentor.AuthServices
 
                 response.End();
             }
+        }
+
+        private string GetParameters()
+        {
+            if (HttpParameters != null && HttpParameters.Count > 0)
+            {
+                return (Location.OriginalString.Contains("?") ? "&" : "?") +
+                       HttpParameters.GetQueryString();
+            }
+            return null;
         }
 
         /// <summary>
@@ -129,7 +129,7 @@ namespace Kentor.AuthServices
                 FederatedAuthentication.SessionAuthenticationModule
                     .AuthenticateSessionSecurityToken(args.SessionToken, args.WriteSessionCookie);                
             }
-        }
+        }        
     }
 
     internal static class CollectionExtensions
@@ -137,7 +137,7 @@ namespace Kentor.AuthServices
         public static string GetQueryString(this NameValueCollection parameters)
         {
             return String.Join("&", (
-                from string name in parameters 
+                from string name in parameters
                 select String.Concat(name, "=", HttpUtility.UrlEncode(parameters[name]))
                 ).ToArray());
         }

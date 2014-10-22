@@ -38,7 +38,7 @@ namespace Kentor.AuthServices
         {
             var x = new XElement(Saml2Namespaces.Saml2P + LocalName);
 
-            x.Add(base.ToXNodes());
+            x.Add(ToXNodes());
             x.AddAttributeIfNotNullOrEmpty("AssertionConsumerServiceURL", AssertionConsumerServiceUrl);
 
             return x;

@@ -72,8 +72,8 @@ namespace SampleMvcApplication
         {
             //Use this event to programmatically modify the sign-in message to the STS.
             System.Diagnostics.Trace.WriteLine("Handling RedirectingToIdentityProvider event");
-            System.Diagnostics.Trace.WriteLine("Location: " + e.CommandResult.Location);
-            System.Diagnostics.Trace.WriteLine("Http status code: " + e.CommandResult.HttpStatusCode);
+            System.Diagnostics.Trace.WriteLine("Location: " + e.AuthenticationRequest.Location);
+            System.Diagnostics.Trace.WriteLine("Http status code: " + e.AuthenticationRequest.HttpStatusCode);
         }
     }
 }

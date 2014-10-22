@@ -1,14 +1,9 @@
 ﻿using Kentor.AuthServices.Configuration;
 using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Globalization;
 using System.IdentityModel.Metadata;
 using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
-using System.Web;
 
 namespace Kentor.AuthServices
 {
@@ -52,7 +47,17 @@ namespace Kentor.AuthServices
 
             var authnRequest = idp.CreateAuthenticateRequest(returnUri);
 
-            return idp.Bind(authnRequest);
+            var args = new RedirectingToIdentityProviderEventArgs(authnRequest);
+
+            Saml2AuthenticationModule.OnRedirectingToIdentityProvider(args);
+
+            if (args.Cancel)
+                return new CommandResult { HttpStatusCode = HttpStatusCode.OK };
+
+            var result = idp.Bind(args.AuthenticationRequest);
+            result.HttpParameters = args.HttpParameters;
+
+            return result;
         }
 
         private static CommandResult RedirectToDiscoveryService(string returnPath)
@@ -71,7 +76,7 @@ namespace Kentor.AuthServices
                 Uri.EscapeDataString(KentorAuthServicesSection.Current.EntityId),
                 Uri.EscapeDataString(returnUrl));
 
-            return new CommandResult()
+            return new CommandResult
             {
                 HttpStatusCode = HttpStatusCode.SeeOther,
                 Location = new Uri(redirectLocation)

@@ -76,10 +76,10 @@ namespace SampleApplication
         {
             //Use this event to programmatically modify the sign-in message to the STS.
             System.Diagnostics.Trace.WriteLine("Handling RedirectingToIdentityProvider event");
-            System.Diagnostics.Trace.WriteLine("Location: " + e.CommandResult.Location);
-            System.Diagnostics.Trace.WriteLine("Http status code: " + e.CommandResult.HttpStatusCode);
+            System.Diagnostics.Trace.WriteLine("Request id: " + e.AuthenticationRequest.Id);
+            System.Diagnostics.Trace.WriteLine("Request issuer: " + e.AuthenticationRequest.Issuer);
 
-            e.CommandResult.HttpParameters.Add("lng", "sk");
+            e.HttpParameters.Add("lng", "sk");
         }
     }
 }
