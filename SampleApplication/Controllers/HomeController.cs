@@ -21,9 +21,9 @@ namespace SampleApplication.Controllers
             return new EmptyResult();
         }
 
-        public ActionResult SignIn()
+        public ActionResult SignIn(string Idp)
         {
-            Saml2AuthenticationModule.Current.SignIn();
+            Saml2AuthenticationModule.Current.SignIn(Idp);
 
             return new EmptyResult();
         }

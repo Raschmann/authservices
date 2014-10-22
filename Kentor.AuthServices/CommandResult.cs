@@ -116,18 +116,15 @@ namespace Kentor.AuthServices
             {
                 var sessionToken = new SessionSecurityToken(Principal);
 
-               var args = new SessionSecurityTokenCreatedEventArgs(sessionToken)
-               {
-                   WriteSessionCookie = true
-               };
-
-                var module = Saml2AuthenticationModule.Current;
-
-                if (module != null)
-                    module.OnSessionSecurityTokenCreated(args);
+                var args = new SessionSecurityTokenCreatedEventArgs(sessionToken)
+                {
+                    WriteSessionCookie = true
+                };
+                               
+                Saml2AuthenticationModule.OnSessionSecurityTokenCreated(args);
 
                 FederatedAuthentication.SessionAuthenticationModule
-                    .AuthenticateSessionSecurityToken(args.SessionToken, args.WriteSessionCookie);                
+                .AuthenticateSessionSecurityToken(args.SessionToken, args.WriteSessionCookie);                
             }
         }        
     }

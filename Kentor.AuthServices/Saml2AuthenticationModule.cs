@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.IdentityModel.Metadata;
 using System.IdentityModel.Services;
 using System.Net;
 using System.Runtime;
@@ -195,12 +196,12 @@ namespace Kentor.AuthServices
         /// Raises the SessionSecurityTokenCreated event.
         /// </summary>
         /// <param name="args">The data for the event.</param>
-        internal virtual void OnSessionSecurityTokenCreated(SessionSecurityTokenCreatedEventArgs args)
+        internal static void OnSessionSecurityTokenCreated(SessionSecurityTokenCreatedEventArgs args)
         {
-            if (SessionSecurityTokenCreated == null)
+            if (Current == null || Current.SessionSecurityTokenCreated == null)
                 return;
 
-            SessionSecurityTokenCreated(this, args);
+            Current.SessionSecurityTokenCreated(Current, args);
         }
 
         /// <summary>
@@ -216,14 +217,23 @@ namespace Kentor.AuthServices
         }
 
         /// <summary>
-        /// Requests a redirect to Idp
+        /// Requests a redirect to Idp.
         /// </summary>
         public void SignIn()
+        {
+            SignIn(null);
+        }
+
+        /// <summary>
+        /// Requests a redirect to Idp.
+        /// </summary>
+        /// <param name="idp">Identity provider name.</param>
+        public void SignIn(string idp)
         {
             var request = new HttpRequestWrapper(HttpContext.Current.Request);
             var response = new HttpResponseWrapper(HttpContext.Current.Response);
 
-            CommandFactory.GetCommand("SignIn").Run(new HttpRequestData(request)).Apply(response);
+            SignInCommand.CreateResult(new EntityId(idp), request.QueryString["ReturnUrl"], request.Url).Apply(response);
             OnSignedIn(EventArgs.Empty);
         }
 

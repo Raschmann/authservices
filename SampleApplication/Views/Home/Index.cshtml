@@ -19,7 +19,8 @@
             var entityId = idp.EntityId;
             var destinationUri = idp.DestinationUri;
             <br />
-            <a href="@Url.Content("~/Saml2AuthenticationModule/SignIn?idp=" + HttpUtility.UrlEncode(entityId))">Sign in</a>@: - @entityId - @destinationUri
+            @*<a href="@Url.Content("~/Saml2AuthenticationModule/SignIn?idp=" + HttpUtility.UrlEncode(entityId))">Sign in</a>@: - @entityId - @destinationUri*@
+            <a href="@Url.Action("SignIn", new { Idp = entityId })" >Sign in</a>@: - @entityId - @destinationUri
         }
     </p>
 }
