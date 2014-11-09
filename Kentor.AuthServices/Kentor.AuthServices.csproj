@@ -53,6 +53,8 @@
     <Compile Include="..\VersionInfo.cs">
       <Link>VersionInfo.cs</Link>
     </Compile>
+    <Compile Include="Internal\CryptographyExtensions.cs" />
+    <Compile Include="Internal\RSAEncryptedXml.cs" />
     <Compile Include="WebSso\AcsCommand.cs" />
     <Compile Include="Metadata\AttributeConsumingService.cs" />
     <Compile Include="Configuration\RequestedAttributeElement.cs" />
