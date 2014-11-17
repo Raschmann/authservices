@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IdentityModel.Services;
 using System.IdentityModel.Tokens;
 using System.Linq;
 using System.Security.Claims;
@@ -254,18 +255,25 @@ namespace Kentor.AuthServices.Saml2P
         /// <value>All assertion element nodes.</value>
         private IEnumerable<XmlElement> AllAssertionElementNodes
         {
-            get
-            {
-                if (allAssertionElementNodes == null)
-                {
-                    allAssertionElementNodes =
-                        XmlDocument.DocumentElement.ChildNodes.Cast<XmlNode>()
-                        .Where(node => node.NodeType == XmlNodeType.Element).Cast<XmlElement>()
-                        .Where(xe => xe.LocalName == "Assertion" && xe.NamespaceURI == Saml2Namespaces.Saml2Name);
-                }
+            get { return allAssertionElementNodes ?? (allAssertionElementNodes = retrieveAssrtionElements()); }
+        }
 
-                return allAssertionElementNodes;
-            }
+        private IEnumerable<XmlElement> retrieveAssrtionElements()
+        {
+            var assertions = new List<XmlElement>();
+
+            assertions.AddRange(XmlDocument.DocumentElement.ChildNodes.Cast<XmlNode>()
+                .Where(node => node.NodeType == XmlNodeType.Element).Cast<XmlElement>()
+                .Where(xe => xe.LocalName == "Assertion" && xe.NamespaceURI == Saml2Namespaces.Saml2Name));
+
+            var spKey = FederatedAuthentication.FederationConfiguration.ServiceCertificate != null ? FederatedAuthentication.FederationConfiguration.ServiceCertificate.PrivateKey : null;
+
+            assertions.AddRange(XmlDocument.DocumentElement.ChildNodes.Cast<XmlNode>()
+                .Where(node => node.NodeType == XmlNodeType.Element).Cast<XmlElement>()
+                .Where(xe => xe.LocalName == "EncryptedAssertion" && xe.NamespaceURI == Saml2Namespaces.Saml2Name).Decrypt(spKey)
+                .Select(xe => (XmlElement)xe.GetElementsByTagName("Assertion", Saml2Namespaces.Saml2Name)[0]));
+
+            return assertions;
         }
 
         /// <summary>
