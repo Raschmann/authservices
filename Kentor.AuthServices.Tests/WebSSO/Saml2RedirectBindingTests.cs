@@ -27,7 +27,7 @@ namespace Kentor.AuthServices.Tests.WebSso
         {
             Saml2Binding.Get(Saml2BindingType.HttpRedirect)
                 .Invoking(b => b.Bind(new Saml2AuthenticationRequest(), null))
-                .ShouldThrow<ArgumentNullException>().And.ParamName.Should().Be("destinationUri");
+                .ShouldThrow<ArgumentNullException>().And.ParamName.Should().Be("destinationUrl");
         }
 
         [TestMethod]
