@@ -208,6 +208,20 @@ namespace Kentor.AuthServices
             }
         }
 
+        private AsymmetricAlgorithm encryptionKey;
+
+        /// <summary>
+        /// The public key of the idp that is used to enctyption of responses/assertions.
+        /// </summary>
+        public AsymmetricAlgorithm EncryptionKey
+        {
+            get
+            {
+                ReloadMetadataIfExpired();
+                return encryptionKey;
+            }            
+        }
+
         object metadataLoadLock = new object();
 
         private void LoadMetadata()
@@ -258,15 +272,22 @@ namespace Kentor.AuthServices
                     .First(s => s.Binding == Saml2Binding.HttpPostUri);
 
                 binding = Saml2Binding.UriToSaml2BindingType(ssoService.Binding);
-                singleSignOnServiceUrl = ssoService.Location;
+                singleSignOnServiceUrl = ssoService.Location;                
 
-                var key = idpDescriptor.Keys
-                    .Where(k => k.Use == KeyType.Unspecified || k.Use == KeyType.Signing)
-                    .SingleOrDefault();
+                // Currently uses onlyt the first certificate
+                var skey = idpDescriptor.Keys.FirstOrDefault(k => k.Use == KeyType.Unspecified || k.Use == KeyType.Signing);
 
-                if (key != null)
+                if (skey != null)
                 {
-                    signingKey = ((AsymmetricSecurityKey)key.KeyInfo.CreateKey())
+                    signingKey = ((AsymmetricSecurityKey)skey.KeyInfo.CreateKey())
+                        .GetAsymmetricAlgorithm(SignedXml.XmlDsigRSASHA1Url, false);
+                }
+
+                var ekey = idpDescriptor.Keys.FirstOrDefault(k => k.Use == KeyType.Unspecified || k.Use == KeyType.Encryption);
+
+                if (ekey != null)
+                {
+                    encryptionKey = ((AsymmetricSecurityKey)ekey.KeyInfo.CreateKey())
                         .GetAsymmetricAlgorithm(SignedXml.XmlDsigRSASHA1Url, false);
                 }
 
