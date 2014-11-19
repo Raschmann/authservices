@@ -1,6 +1,5 @@
-﻿using System;
+﻿using Microsoft.QualityTools.Testing.Fakes;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Microsoft.QualityTools.Testing.Fakes;
 using NSubstitute;
 using System.IdentityModel.Services;
 using Kentor.AuthServices.Mvc;
